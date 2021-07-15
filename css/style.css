@@ -598,12 +598,12 @@ header label {
   font-weight: normal;
 }
 .description {
-  transform: translateY(2vh);
+  transform: translateY(1vh);
   font-size: 1.2em;
   font-weight: normal;
 }
 .links {
-  transform: translateY(5vh);
+  transform: translateY(3vh);
 }
 .links a {
   padding: 0 15px;

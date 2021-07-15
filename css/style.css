@@ -597,7 +597,7 @@ header label {
   font-weight: normal;
 }
 .description {
-  transform: translateY(3vh);
+  transform: translateY(6vh);
   text-align: justify;
   min-width: 10%;
   max-width: 85%;

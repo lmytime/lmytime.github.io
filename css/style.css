@@ -592,12 +592,12 @@ header label {
   cursor: pointer;
 }
 .nickname {
-  transform: translateY(1vh);
+  transform: translateY(3vh);
   font-size: 2.5em;
   font-weight: normal;
 }
 .description {
-  transform: translateY(1vh);
+  transform: translateY(2vh);
   text-align: justify;
   min-width: 10%;
   max-width: 85%;

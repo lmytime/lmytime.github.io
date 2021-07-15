@@ -596,8 +596,11 @@ header label {
   font-size: 2.5em;
   font-weight: normal;
 }
+.links {
+  transform: translateY(5vh);
+}
 .links a {
-  padding: 0 5px;
+  padding: 5 0px;
 }
 .links a:hover {
   background-color: transparent;

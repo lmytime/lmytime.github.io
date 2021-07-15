@@ -600,7 +600,7 @@ header label {
   transform: translateY(5vh);
 }
 .links a {
-  padding: 0 10px;
+  padding: 0 15px;
 }
 .links a:hover {
   background-color: transparent;

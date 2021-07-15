@@ -566,7 +566,7 @@ header label {
 }
 .intro .avatar {
   text-align: left;
-  padding: -100px;
+  padding: 0 10px;
 }
 .intro .avatar img {
   width: 200px;
@@ -593,7 +593,7 @@ header label {
   cursor: pointer;
 }
 .nickname {
-  font-size: 2em;
+  font-size: 3em;
   font-weight: normal;
 }
 .links a {

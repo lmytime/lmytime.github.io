@@ -604,6 +604,7 @@ header label {
 }
 .links {
   transform: translateY(3vh);
+  transform: translateY(10vh);
 }
 .links a {
   padding: 0 15px;

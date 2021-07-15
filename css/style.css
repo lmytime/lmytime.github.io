@@ -598,7 +598,7 @@ header label {
 }
 .description {
   transform: translateY(2vh);
-  font-size: 2em;
+  font-size: 1.5em;
 }
 .links {
   transform: translateY(5vh);

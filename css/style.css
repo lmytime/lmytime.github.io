@@ -609,14 +609,14 @@ header label {
   transform: translateY(10vh);
 }
 .links a {
-  font-size: 2em;
+  font-size: 1.8em;
   padding: 0 15px;
 }
 .links a:hover {
   background-color: transparent;
 }
 .links .iconfont {
-  font-size: 1.2em;
+  font-size: 1em;
 }
 .post-wrap {
   position: relative;

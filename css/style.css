@@ -597,10 +597,10 @@ header label {
   font-weight: normal;
 }
 .description {
-  min-width: 20%;
-  max-width: 80%;
-  display: inline-block;
   transform: translateY(1vh);
+  min-width: 10%;
+  max-width: 85%;
+  display: inline-block;
   font-size: 1.2em;
   font-weight: normal;
 }

@@ -1374,6 +1374,7 @@ header label {
   color: #8959a8;
 }
 .description a {
+  font-style: italic;
   color: #0593d3;
   border-bottom: none;
   border-bottom: 1px solid #0593d3;

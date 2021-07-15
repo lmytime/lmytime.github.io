@@ -609,7 +609,7 @@ header label {
   transform: translateY(3vh);
 }
 .links a {
-  font-size: 1em;
+  font-size: 2em;
   padding: 0 15px;
 }
 .links a:hover {

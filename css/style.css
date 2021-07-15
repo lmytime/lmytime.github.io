@@ -565,7 +565,7 @@ header label {
   text-align: center;
 }
 .intro .avatar {
-  padding: 10px;
+  padding: 0px;
 }
 .intro .avatar img {
   width: 200px;

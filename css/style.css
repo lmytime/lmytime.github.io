@@ -597,14 +597,13 @@ header label {
   font-weight: normal;
 }
 .links a {
-  font-size: 1.5em;
   padding: 0 5px;
 }
 .links a:hover {
   background-color: transparent;
 }
 .links .iconfont {
-  font-size: 2em;
+  font-size: 2.5em;
 }
 .post-wrap {
   position: relative;

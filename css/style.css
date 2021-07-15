@@ -615,9 +615,6 @@ header label {
 .links a:hover {
   background-color: transparent;
 }
-.links .iconfont {
-  font-size: 2.8em;
-}
 .post-wrap {
   position: relative;
   width: 100%;

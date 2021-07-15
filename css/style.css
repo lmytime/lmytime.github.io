@@ -592,7 +592,7 @@ header label {
   cursor: pointer;
 }
 .nickname {
-  transform: translateY(3vh);
+  transform: translateY(5vh);
   font-size: 2.5em;
   font-weight: normal;
 }
@@ -606,7 +606,7 @@ header label {
   font-weight: normal;
 }
 .links {
-  transform: translateY(3vh);
+  transform: translateY(8vh);
 }
 .links a {
   font-size: 2em;
@@ -614,6 +614,9 @@ header label {
 }
 .links a:hover {
   background-color: transparent;
+}
+.links .iconfont {
+  font-size: 1.2em;
 }
 .post-wrap {
   position: relative;

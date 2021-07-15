@@ -562,13 +562,13 @@ header label {
 }
 .intro {
   transform: translateY(20vh);
-  text-align: left;
+  text-align: center;
 }
 .intro .avatar {
   padding: 10px;
 }
 .intro .avatar img {
-  width: 500px;
+  width: 200px;
   height: auto;
   display: inline-block;
   -webkit-border-radius: 100%;

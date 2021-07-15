@@ -571,7 +571,7 @@ header label {
   width: 200px;
   height: auto;
   display: inline-block;
-  -webkit-border-radius: 100%;
+  -webkit-border-radius: 200%;
   border-radius: 100%;
   -webkit-box-shadow: 0 0 0 0.3618em rgba(0,0,0,0.05);
   box-shadow: 0 0 0 0.3618em rgba(0,0,0,0.05);

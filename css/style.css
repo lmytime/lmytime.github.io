@@ -566,7 +566,7 @@ header label {
 }
 .intro .avatar {
   text-align: left;
-  padding: 0 10px;
+  padding: 0px;
 }
 .intro .avatar img {
   width: 200px;
@@ -603,7 +603,7 @@ header label {
   background-color: transparent;
 }
 .links .iconfont {
-  font-size: 2em;
+  font-size: 4em;
 }
 .post-wrap {
   position: relative;

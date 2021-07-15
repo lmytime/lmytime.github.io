@@ -561,7 +561,6 @@ header label {
   width: 60%;
 }
 .intro {
-  transform: translateY(20vh);
   text-align: center;
 }
 .intro .avatar {

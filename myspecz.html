@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySpecZ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+        }
+
+        canvas {
+            cursor: crosshair;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        #topLineLabelContainer {
+            position: relative;
+            width: 100%;
+            height: 60px;
+            margin-bottom: 5px;
+            overflow: visible;
+            pointer-events: none;
+        }
+
+        .line-label {
+            position: absolute;
+            font-size: small;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.75);
+            padding: 4px 2px;
+            border-radius: 2px;
+            white-space: nowrap;
+            pointer-events: none;
+            writing-mode: sideways-lr;
+            text-orientation: mixed;
+            transform-origin: top center;
+        }
+
+        .drop-zone {
+            border: 2px dashed #ccc;
+            transition: border-color 0.3s, background-color 0.3s;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .drop-zone.dragover {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        #imageUpload {
+            opacity: 0;
+            width: 0.1px;
+            height: 0.1px;
+            position: absolute;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        #imageUploadLabel {
+            display: block;
+        }
+
+        #zoomCanvasContainer {
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            background-color: white;
+            padding: 5px;
+            border-radius: 8px;
+            margin-top: 10px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #zoomCanvas {
+            cursor: crosshair;
+            display: block;
+        }
+
+        .gallery-item {
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+        }
+
+        .gallery-item:hover {
+            background-color: #e5e7eb;
+        }
+
+        .gallery-item.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        #emissionLineEditorPanel {
+            border: 1px solid #ccc;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            background-color: #f9fafb;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-8 px-4">
+
+    <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-7xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-700">MySpecZ</h1>
+            <p class="text-sm text-gray-500 mt-1">Upload your spectrum image, calibrate wavelength, align lines, and
+                measure redshift.</p>
+        </header>
+
+        <div id="statusMessage" class="mb-4 p-3 bg-blue-100 text-blue-700 rounded-lg text-center col-span-full">
+            Please upload a spectrum image to begin.
+        </div>
+
+        <div id="mainLayout" class="flex flex-col lg:flex-row gap-6">
+            <div id="leftPanel"
+                class="lg:w-1/4 space-y-6 p-4 border border-gray-200 rounded-lg bg-gray-50 transition-all duration-300 ease-in-out">
+                <div id="imageUploadContainer" style="cursor: pointer;">
+
+                    <div id="dropZone" class="drop-zone">
+                        <input type="file" id="imageUpload" accept="image/*" multiple>
+                        <h2>Choose Image</h2>
+                        <p id="dropZoneText" class="text-xs text-gray-500">Drag & drop image(s) here, or click to
+                            select.</p>
+                    </div>
+                </div>
+                <div id="galleryContainer" class="hidden">
+                    <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 text-center">Your Spectra</h2>
+                    <div id="galleryList" class="max-h-40 overflow-y-auto border rounded-lg p-1 mt-2 space-y-1">
+                    </div>
+                </div>
+
+                <button id="resetButton"
+                    class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out disabled:opacity-50"
+                    disabled>
+                    Reset Application
+                </button>
+
+                <div id="calibrationSection">
+                    <div id="calibrationControls" class="space-y-4 hidden">
+                        <h3 class="text-lg font-semibold text-gray-700 border-b pb-2">X Calibration</h3>
+                        <div>
+                            <label for="wavelengthUnit" class="block mb-1 text-sm font-medium text-gray-700">Wavelength
+                                Unit:</label>
+                            <select id="wavelengthUnit"
+                                class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                <option value="A" selected>Ångström (Å)</option>
+                                <option value="um">Micron (µm)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="wl1" class="block mb-1 text-sm font-medium text-gray-700">Calibration Point 1
+                                Wavelength:</label>
+                            <input type="number" id="wl1"
+                                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="wl2" class="block mb-1 text-sm font-medium text-gray-700">Calibration Point 2
+                                Wavelength:</label>
+                            <input type="number" id="wl2"
+                                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <button id="calibrateButton"
+                            class="w-full bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition duration-150 ease-in-out disabled:opacity-50">
+                            X Calibrate
+                        </button>
+                        <p class="text-xs text-gray-500">Tip: Select a point, use arrow keys to fine-tune, 'd' to
+                            delete.</p>
+                    </div>
+                    <button id="recalibrateButtonToggle"
+                        class="mt-4 w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out hidden">
+                        Re-calibrate X
+                    </button>
+                </div>
+
+                <div id="spectrumInfoContainer" class="space-y-2 hidden text-center">
+                    <h3 class="text-lg font-semibold text-gray-700 border-b pb-2">Spectrum Info</h3>
+                    <p id="mouseWavelengthDisplay" class="text-sm text-gray-600">Cursor Wavelength: N/A</p>
+                </div>
+
+                <button id="toggleLinesEditorButton"
+                    class="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">
+                    Edit Emission Lines
+                </button>
+            </div>
+
+            <div id="rightPanel" class="lg:w-3/4 flex flex-col items-center transition-all duration-300 ease-in-out">
+                <div id="topLineLabelContainer"></div>
+                <div class="relative w-full">
+                    <canvas id="spectrumCanvas" class="w-full h-auto bg-gray-200 rounded-lg shadow"></canvas>
+                </div>
+
+                <div id="zoomCanvasContainer" class="hidden">
+                    <canvas id="zoomCanvas"></canvas>
+                    <p class="text-xs text-center text-gray-500 mt-1">Click zoomed area to pinpoint.</p>
+                </div>
+
+                <div id="redshiftInputContainerRight" class="space-y-1 mt-4 w-full max-w-xs hidden">
+                    <label for="redshiftInput" class="block font-medium text-gray-700 text-center">Redshift
+                        (z)</label>
+                    <input type="number" id="redshiftInput" step="0.0001" value="0"
+                        class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-center">
+                    <p class="text-xs text-gray-500 text-center">Tip: Hold Shift and drag on spectrum to adjust.</p>
+                </div>
+
+                <div id="emissionLineEditorPanel" class="w-full hidden">
+                    <h2 class="text-xl font-semibold mb-4">Edit Emission Lines</h2>
+
+                    <div class="mb-4">
+                        <label for="presetSelect" class="block text-sm font-medium text-gray-700">Line Presets:</label>
+                        <div class="flex gap-2 mt-1">
+                            <select id="presetSelect"
+                                class="flex-grow p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white"></select>
+                            <button id="deletePresetButton"
+                                class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 rounded-md text-sm">Delete
+                                Preset</button>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="savePresetName" class="block text-sm font-medium text-gray-700">Save Current as New
+                            Preset:</label>
+                        <div class="flex gap-2 mt-1">
+                            <input type="text" id="savePresetName" placeholder="New Preset Name"
+                                class="flex-grow p-2 border border-gray-300 rounded-md shadow-sm">
+                            <button id="savePresetButton"
+                                class="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-2 px-3 rounded-md text-sm">Save
+                                Preset</button>
+                        </div>
+                    </div>
+                    <hr class="my-4">
+
+                    <div id="emissionLinesListDisplay"
+                        class="mb-6 max-h-60 overflow-y-auto border rounded-lg p-2 bg-white">
+                    </div>
+
+                    <h3 class="text-lg font-semibold mb-2">Add/Edit Line Details</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label for="modalLineName" class="block text-sm font-medium text-gray-700">Name:</label>
+                            <input type="text" id="modalLineName"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="modalLineWavelength" class="block text-sm font-medium text-gray-700">Wavelength
+                                (Å):</label>
+                            <input type="number" id="modalLineWavelength" step="any"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="modalLineColor" class="block text-sm font-medium text-gray-700">Color:</label>
+                            <input type="color" id="modalLineColor" value="#FF0000"
+                                class="mt-1 block w-full h-10 p-1 border border-gray-300 rounded-md shadow-sm">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button id="modalClearFormButton"
+                            class="bg-gray-300 hover:bg-gray-400 text-black font-semibold py-2 px-4 rounded-lg">Clear
+                            Form</button>
+                        <button id="modalAddOrUpdateButton"
+                            class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg">Add New
+                            Line</button>
+                    </div>
+                    <hr class="my-6">
+                    <p class="text-xs text-gray-500 mb-2">Changes to line visibility are saved when this panel is closed
+                        or a preset is saved/loaded.</p>
+                    <div class="flex justify-end">
+                        <button id="closeLineEditorButton"
+                            class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">Close
+                            Editor</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-8 text-center text-sm text-gray-500">
+        <p>&copy; 2025 AstroMy Project led by <a target="_blank" href="https://lmytime.com"
+                style="color: cornflowerblue;">Mingyu Li</a></p>
+    </footer>
+
+    <script>
+        // Robust MD5 function (taken from a common open-source implementation)
+        function md5(string) {
+            function RL(n, S) { return (n << S) | (n >>> (32 - S)); }
+            function F(X, Y, Z) { return (X & Y) | ((~X) & Z); }
+            function G(X, Y, Z) { return (X & Z) | (Y & (~Z)); }
+            function H(X, Y, Z) { return X ^ Y ^ Z; }
+            function I(X, Y, Z) { return Y ^ (X | (~Z)); }
+            function FF(a, b, c, d, x, s, t) { return RL(a + F(b, c, d) + x + t, s) + b; }
+            function GG(a, b, c, d, x, s, t) { return RL(a + G(b, c, d) + x + t, s) + b; }
+            function HH(a, b, c, d, x, s, t) { return RL(a + H(b, c, d) + x + t, s) + b; }
+            function II(a, b, c, d, x, s, t) { return RL(a + I(b, c, d) + x + t, s) + b; }
+
+            function ConvertToWordArray(str) {
+                let lWordCount;
+                let lMessageLength = str.length;
+                let lNumberOfWords_temp1 = lMessageLength + 8;
+                let lNumberOfWords_temp2 = (lNumberOfWords_temp1 - (lNumberOfWords_temp1 % 64)) / 64;
+                let lNumberOfWords = (lNumberOfWords_temp2 + 1) * 16;
+                let lWordArray = Array(lNumberOfWords - 1);
+                let lBytePosition = 0;
+                let lByteCount = 0;
+                while (lByteCount < lMessageLength) {
+                    lWordCount = (lByteCount - (lByteCount % 4)) / 4;
+                    lBytePosition = (lByteCount % 4) * 8;
+                    lWordArray[lWordCount] = (lWordArray[lWordCount] | (str.charCodeAt(lByteCount) << lBytePosition));
+                    lByteCount++;
+                }
+                lWordCount = (lByteCount - (lByteCount % 4)) / 4;
+                lBytePosition = (lByteCount % 4) * 8;
+                lWordArray[lWordCount] = lWordArray[lWordCount] | (0x80 << lBytePosition);
+                lWordArray[lNumberOfWords - 2] = lMessageLength << 3;
+                lWordArray[lNumberOfWords - 1] = lMessageLength >>> 29;
+                return lWordArray;
+            }
+
+            function WordToHex(lValue) {
+                let WordToHexValue = "", WordToHexValue_temp = "", lByte, lCount;
+                for (lCount = 0; lCount <= 3; lCount++) {
+                    lByte = (lValue >>> (lCount * 8)) & 255;
+                    WordToHexValue_temp = "0" + lByte.toString(16);
+                    WordToHexValue = WordToHexValue + WordToHexValue_temp.substr(WordToHexValue_temp.length - 2, 2);
+                }
+                return WordToHexValue;
+            }
+
+            let x = Array();
+            let k, AA, BB, CC, DD, a, b, c, d;
+            let S11 = 7, S12 = 12, S13 = 17, S14 = 22;
+            let S21 = 5, S22 = 9, S23 = 14, S24 = 20;
+            let S31 = 4, S32 = 11, S33 = 16, S34 = 23;
+            let S41 = 6, S42 = 10, S43 = 15, S44 = 21;
+
+            let Utf8Encode = function (string) {
+                string = string.replace(/\r\n/g, "\n");
+                let utftext = "";
+                for (let n = 0; n < string.length; n++) {
+                    let charcode = string.charCodeAt(n);
+                    if (charcode < 128) {
+                        utftext += String.fromCharCode(charcode);
+                    } else if ((charcode > 127) && (charcode < 2048)) {
+                        utftext += String.fromCharCode((charcode >> 6) | 192);
+                        utftext += String.fromCharCode((charcode & 63) | 128);
+                    } else {
+                        utftext += String.fromCharCode((charcode >> 12) | 224);
+                        utftext += String.fromCharCode(((charcode >> 6) & 63) | 128);
+                        utftext += String.fromCharCode((charcode & 63) | 128);
+                    }
+                }
+                return utftext;
+            };
+
+            string = Utf8Encode(string);
+            x = ConvertToWordArray(string);
+            a = 0x67452301; b = 0xEFCDAB89; c = 0x98BADCFE; d = 0x10325476;
+
+            for (k = 0; k < x.length; k += 16) {
+                AA = a; BB = b; CC = c; DD = d;
+                a = FF(a, b, c, d, x[k + 0], S11, 0xD76AA478);
+                d = FF(d, a, b, c, x[k + 1], S12, 0xE8C7B756);
+                c = FF(c, d, a, b, x[k + 2], S13, 0x242070DB);
+                b = FF(b, c, d, a, x[k + 3], S14, 0xC1BDCEEE);
+                a = FF(a, b, c, d, x[k + 4], S11, 0xF57C0FAF);
+                d = FF(d, a, b, c, x[k + 5], S12, 0x4787C62A);
+                c = FF(c, d, a, b, x[k + 6], S13, 0xA8304613);
+                b = FF(b, c, d, a, x[k + 7], S14, 0xFD469501);
+                a = FF(a, b, c, d, x[k + 8], S11, 0x698098D8);
+                d = FF(d, a, b, c, x[k + 9], S12, 0x8B44F7AF);
+                c = FF(c, d, a, b, x[k + 10], S13, 0xFFFF5BB1);
+                b = FF(b, c, d, a, x[k + 11], S14, 0x895CD7BE);
+                a = FF(a, b, c, d, x[k + 12], S11, 0x6B901122);
+                d = FF(d, a, b, c, x[k + 13], S12, 0xFD987193);
+                c = FF(c, d, a, b, x[k + 14], S13, 0xA679438E);
+                b = FF(b, c, d, a, x[k + 15], S14, 0x49B40821);
+                a = GG(a, b, c, d, x[k + 1], S21, 0xF61E2562);
+                d = GG(d, a, b, c, x[k + 6], S22, 0xC040B340);
+                c = GG(c, d, a, b, x[k + 11], S23, 0x265E5A51);
+                b = GG(b, c, d, a, x[k + 0], S24, 0xE9B6C7AA);
+                a = GG(a, b, c, d, x[k + 5], S21, 0xD62F105D);
+                d = GG(d, a, b, c, x[k + 10], S22, 0x02441453);
+                c = GG(c, d, a, b, x[k + 15], S23, 0xD8A1E681);
+                b = GG(b, c, d, a, x[k + 4], S24, 0xE7D3FBC8);
+                a = GG(a, b, c, d, x[k + 9], S21, 0x21E1CDE6);
+                d = GG(d, a, b, c, x[k + 14], S22, 0xC33707D6);
+                c = GG(c, d, a, b, x[k + 3], S23, 0xF4D50D87);
+                b = GG(b, c, d, a, x[k + 8], S24, 0x455A14ED);
+                a = GG(a, b, c, d, x[k + 13], S21, 0xA9E3E905);
+                d = GG(d, a, b, c, x[k + 2], S22, 0xFCEFA3F8);
+                c = GG(c, d, a, b, x[k + 7], S23, 0x676F02D9);
+                b = GG(b, c, d, a, x[k + 12], S24, 0x8D2A4C8A);
+                a = HH(a, b, c, d, x[k + 5], S31, 0xFFFA3942);
+                d = HH(d, a, b, c, x[k + 8], S32, 0x8771F681);
+                c = HH(c, d, a, b, x[k + 11], S33, 0x6D9D6122);
+                b = HH(b, c, d, a, x[k + 14], S34, 0xFDE5380C);
+                a = HH(a, b, c, d, x[k + 1], S31, 0xA4BEEA44);
+                d = HH(d, a, b, c, x[k + 4], S32, 0x4BDECFA9);
+                c = HH(c, d, a, b, x[k + 7], S33, 0xF6BB4B60);
+                b = HH(b, c, d, a, x[k + 10], S34, 0xBEBFBC70);
+                a = HH(a, b, c, d, x[k + 13], S31, 0x289B7EC6);
+                d = HH(d, a, b, c, x[k + 0], S32, 0xEAA127FA);
+                c = HH(c, d, a, b, x[k + 3], S33, 0xD4EF3085);
+                b = HH(b, c, d, a, x[k + 6], S34, 0x04881D05);
+                a = HH(a, b, c, d, x[k + 9], S31, 0xD9D4D039);
+                d = HH(d, a, b, c, x[k + 12], S32, 0xE6DB99E5);
+                c = HH(c, d, a, b, x[k + 15], S33, 0x1FA27CF8);
+                b = HH(b, c, d, a, x[k + 2], S34, 0xC4AC5665);
+                a = II(a, b, c, d, x[k + 0], S41, 0xF4292244);
+                d = II(d, a, b, c, x[k + 7], S42, 0x432AFF97);
+                c = II(c, d, a, b, x[k + 14], S43, 0xAB9423A7);
+                b = II(b, c, d, a, x[k + 5], S44, 0xFC93A039);
+                a = II(a, b, c, d, x[k + 12], S41, 0x655B59C3);
+                d = II(d, a, b, c, x[k + 3], S42, 0x8F0CCC92);
+                c = II(c, d, a, b, x[k + 10], S43, 0xFFEFF47D);
+                b = II(b, c, d, a, x[k + 1], S44, 0x85845DD1);
+                a = II(a, b, c, d, x[k + 8], S41, 0x6FA87E4F);
+                d = II(d, a, b, c, x[k + 15], S42, 0xFE2CE6E0);
+                c = II(c, d, a, b, x[k + 6], S43, 0xA3014314);
+                b = II(b, c, d, a, x[k + 13], S44, 0x4E0811A1);
+                a = II(a, b, c, d, x[k + 4], S41, 0xF7537E82);
+                d = II(d, a, b, c, x[k + 11], S42, 0xBD3AF235);
+                c = II(c, d, a, b, x[k + 2], S43, 0x2AD7D2BB);
+                b = II(b, c, d, a, x[k + 9], S44, 0xEB86D391);
+                a = (a + AA) & 0xFFFFFFFF;
+                b = (b + BB) & 0xFFFFFFFF;
+                c = (c + CC) & 0xFFFFFFFF;
+                d = (d + DD) & 0xFFFFFFFF;
+            }
+            return WordToHex(a) + WordToHex(b) + WordToHex(c) + WordToHex(d);
+        }
+
+
+        const leftPanel = document.getElementById('leftPanel');
+        const rightPanel = document.getElementById('rightPanel');
+        const imageUploadContainer = document.getElementById('imageUploadContainer');
+        const imageUpload = document.getElementById('imageUpload');
+        const imageUploadLabel = document.getElementById('imageUploadLabel');
+        const dropZone = document.getElementById('dropZone');
+        const dropZoneText = document.getElementById('dropZoneText');
+        const galleryContainer = document.getElementById('galleryContainer');
+        const galleryList = document.getElementById('galleryList');
+        const spectrumCanvas = document.getElementById('spectrumCanvas');
+        const ctx = spectrumCanvas.getContext('2d');
+        const statusMessage = document.getElementById('statusMessage');
+        const wl1Input = document.getElementById('wl1');
+        const wl2Input = document.getElementById('wl2');
+        const wavelengthUnitSelect = document.getElementById('wavelengthUnit');
+        const calibrateButton = document.getElementById('calibrateButton');
+        const calibrationControls = document.getElementById('calibrationControls');
+        const recalibrateButtonToggle = document.getElementById('recalibrateButtonToggle');
+        const redshiftInputContainerRight = document.getElementById('redshiftInputContainerRight');
+        const redshiftInput = document.getElementById('redshiftInput');
+        const resetButton = document.getElementById('resetButton');
+        const topLineLabelContainer = document.getElementById('topLineLabelContainer');
+        const zoomCanvasContainer = document.getElementById('zoomCanvasContainer');
+        const zoomCanvas = document.getElementById('zoomCanvas');
+        const ctxZoom = zoomCanvas.getContext('2d');
+        const spectrumInfoContainer = document.getElementById('spectrumInfoContainer');
+        const mouseWavelengthDisplay = document.getElementById('mouseWavelengthDisplay');
+
+        const toggleLinesEditorButton = document.getElementById('toggleLinesEditorButton');
+        const emissionLineEditorPanel = document.getElementById('emissionLineEditorPanel');
+        const closeLineEditorButton = document.getElementById('closeLineEditorButton');
+        const emissionLinesListDisplay = document.getElementById('emissionLinesListDisplay');
+        const modalLineName = document.getElementById('modalLineName');
+        const modalLineWavelength = document.getElementById('modalLineWavelength');
+        const modalLineColor = document.getElementById('modalLineColor');
+        const modalClearFormButton = document.getElementById('modalClearFormButton');
+        const modalAddOrUpdateButton = document.getElementById('modalAddOrUpdateButton');
+        const presetSelect = document.getElementById('presetSelect');
+        const savePresetNameInput = document.getElementById('savePresetName');
+        const savePresetButton = document.getElementById('savePresetButton');
+        const deletePresetButton = document.getElementById('deletePresetButton');
+        let editingLineIndex = -1;
+
+        let galleryImages = [];
+        let activeImageIndex = -1;
+
+        let slopeNatural = null;
+        let interceptNatural = null;
+        let isGloballyCalibrated = false;
+
+        let currentDisplayScaleFactor = 1;
+        let calibrationPoints = [];
+        let activeCalibrationPointIndex = -1;
+
+        const ARROW_KEY_ADJUST_STEP = 0.25;
+        const POINT_SELECTION_RADIUS = 10;
+
+        let isZoomActive = false;
+        const ZOOM_LEVEL = 5;
+        const ZOOM_SOURCE_REGION_SIZE = 30;
+        const ZOOM_CANVAS_SIZE = 150;
+        zoomCanvas.width = ZOOM_CANVAS_SIZE;
+        zoomCanvas.height = ZOOM_CANVAS_SIZE;
+
+        let isDraggingRedshift = false;
+        let dragReferenceRestWavelength = null;
+        // const LOGO_URL = 'https://placehold.co/800x200/E5E7EB/4B5563?text=MySpecZ+\\n+Your+Rapid+Spec-z+Tool&font=lato';
+        const LOGO_URL = "./myspecez_cover.jpeg"
+        let logoImage = null;
+
+
+        const DEFAULT_EMISSION_LINES_PRESET = [
+            // Lyman Lines (Hydrogen)
+            { name: 'Lyα', wavelength: 1215.67, color: '#1E90FF', isVisible: true },
+            { name: 'Lyβ', wavelength: 1025.722, color: '#1E90FF', isVisible: false },
+            { name: 'Lyγ', wavelength: 972.54, color: '#1E90FF', isVisible: false },
+            { name: 'Lyδ', wavelength: 949.742, color: '#1E90FF', isVisible: false },
+            { name: 'Lyε', wavelength: 937.814, color: '#1E90FF', isVisible: false },
+            { name: 'Ly∞', wavelength: 911.75, color: '#1E90FF', isVisible: true },
+
+            // UV galaxy and AGN lines
+            { name: 'O VI', wavelength: 1037.6167, color: '#66CDAA', isVisible: false },
+            { name: 'N III]', wavelength: 1750.0, color: '#66CDAA', isVisible: false },
+            { name: 'C II', wavelength: 1334.53, color: '#66CDAA', isVisible: false },
+            { name: 'N V', wavelength: 1238.821, color: '#66CDAA', isVisible: false },
+            { name: 'N V', wavelength: 1242.804, color: '#66CDAA', isVisible: false },
+            { name: 'C IV', wavelength: 1548.187, color: '#66CDAA', isVisible: false },
+            { name: 'C IV', wavelength: 1550.772, color: '#66CDAA', isVisible: false },
+            { name: 'He II', wavelength: 1640.42, color: '#66CDAA', isVisible: false },
+            { name: 'O III]', wavelength: 1660.809, color: '#66CDAA', isVisible: false },
+            { name: 'O III]', wavelength: 1666.150, color: '#66CDAA', isVisible: false },
+            { name: 'C III]', wavelength: 1908.73, color: '#66CDAA', isVisible: false },
+            { name: 'Mg II', wavelength: 2796.3543, color: '#66CDAA', isVisible: false },
+            { name: 'Mg II', wavelength: 2803.5315, color: '#66CDAA', isVisible: false },
+
+            // [O II] Doublet - Color: MediumSeaGreen
+            { name: '[O II] 3726', wavelength: 3727.092, color: '#3CB371', isVisible: true },
+            { name: '[O II] 3729', wavelength: 3729.874, color: '#3CB371', isVisible: true },
+            // [Ne III] Line - Color: MediumAquamarine
+            { name: '[Ne III] 3869', wavelength: 3869.84, color: '#3CB371', isVisible: true },
+            { name: '[Ne III] 3967', wavelength: 3967.47, color: '#3CB371', isVisible: false },
+
+            // Balmer lines (Hydrogen )  // DodgerBlue
+            { name: 'Hα', wavelength: 6564.6, color: '#1E90FF', isVisible: true },
+            { name: 'Hβ', wavelength: 4862.68, color: '#1E90FF', isVisible: true },
+            { name: 'Hγ', wavelength: 4340.46, color: '#1E90FF', isVisible: true },
+            { name: 'Hδ', wavelength: 4101.73, color: '#1E90FF', isVisible: false },
+            { name: 'Hε', wavelength: 3970.07, color: '#1E90FF', isVisible: false },
+            { name: 'Hζ', wavelength: 3889.05, color: '#1E90FF', isVisible: false },
+            { name: 'Hη', wavelength: 3835.39, color: '#1E90FF', isVisible: false },
+            { name: 'H∞', wavelength: 3646.05, color: '#1E90FF', isVisible: false },
+
+            // Optical galaxy and AGN lines
+            { name: '[O III] 4363', wavelength: 4364.435, color: '#FFA500', isVisible: false },
+            { name: '[O III] 4959', wavelength: 4960.295, color: '#FFA500', isVisible: true },
+            { name: '[O III] 5007', wavelength: 5008.24, color: '#FFA500', isVisible: true },
+            { name: 'NII6549', wavelength: 6549.86, color: '#FFA500', isVisible: true },
+            { name: 'NII6585', wavelength: 6585.27, color: '#FFA500', isVisible: true },
+            { name: 'SII6718', wavelength: 6718.29, color: '#FFA500', isVisible: true },
+            { name: 'SII6732', wavelength: 6732.68, color: '#FFA500', isVisible: true },
+            { name: '[O I] 6300', wavelength: 6302.046, color: '#FFA500', isVisible: true },
+            { name: '[C I] 9850', wavelength: 9852.96, color: '#FFA500', isVisible: false },
+
+
+            // Paschen Lines (Hydrogen) - Color: Tomato
+            { name: 'Paα', wavelength: 18756.1, color: '#FF6347', isVisible: true },
+            { name: 'Paβ', wavelength: 12821.6, color: '#FF6347', isVisible: true },
+            { name: 'Paγ', wavelength: 10941.1, color: '#FF6347', isVisible: true },
+            { name: 'Paδ', wavelength: 10052.1, color: '#FF6347', isVisible: false },
+
+            // Brackett Lines (Hydrogen) - Color: LightSalmon
+            { name: 'Brα', wavelength: 40522.62, color: '#FFA07A', isVisible: true },
+            { name: 'Brβ', wavelength: 26258.67, color: '#FFA07A', isVisible: true },
+            { name: 'Brγ', wavelength: 21661.2, color: '#FFA07A', isVisible: false },
+            { name: 'Brδ', wavelength: 19450.87, color: '#FFA07A', isVisible: false },
+            { name: 'Brε', wavelength: 18179.1, color: '#FFA07A', isVisible: false },
+
+            // Pfund Lines (Hydrogen) - Color: LightCoral
+            { name: 'Pfα', wavelength: 74681.4, color: '#F08080', isVisible: false },
+            { name: 'Pfβ', wavelength: 46585.8, color: '#F08080', isVisible: false },
+            { name: 'Pfγ', wavelength: 40522.62, color: '#F08080', isVisible: false },
+            { name: 'Pfδ', wavelength: 36468.0, color: '#F08080', isVisible: false },
+            { name: 'Pfε', wavelength: 33464.0, color: '#F08080', isVisible: false },
+
+            // HeI Lines - Color: Gold
+            { name: 'HeI 5876', wavelength: 5877.299, color: '#FFD700', isVisible: true },
+            { name: 'HeI 7065', wavelength: 7067.198, color: '#FFD700', isVisible: false },
+            { name: 'HeI 7283', wavelength: 7283.356, color: '#FFD700', isVisible: false },
+            { name: 'HeI 10833', wavelength: 10833.22, color: '#FFD700', isVisible: true },
+            { name: 'HeI 12780', wavelength: 12780.0, color: '#FFD700', isVisible: false },
+            { name: 'HeI 17010', wavelength: 17010.0, color: '#FFD700', isVisible: false },
+            { name: 'HeI 18685', wavelength: 18689.0, color: '#FFD700', isVisible: false },
+            { name: 'HeI 20590', wavelength: 20590.0, color: '#FFD700', isVisible: false },
+            { name: 'HeI 21130', wavelength: 21130.0, color: '#FFD700', isVisible: false },
+            { name: 'HeI 21650', wavelength: 21650.0, color: '#FFD700', isVisible: false },
+
+            // HeII Line - Color: DarkOrange
+            { name: 'HeII 21890', wavelength: 21890.0, color: '#FF8C00', isVisible: false },
+
+            // SIII Doublets - Color: LightGreen (#90EE90)
+            { name: '[SIII] 9069', wavelength: 9071.1, color: '#FFA500', isVisible: true },
+            { name: '[SIII] 9531', wavelength: 9533.2, color: '#FFA500', isVisible: true },
+
+            // [[Fe II]] Lines - Color: Cyan (#0000FF)
+            { name: '[Fe II] 12570', wavelength: 12570.238, color: '#0000FF', isVisible: true },
+            { name: '[Fe II] 14421', wavelength: 14421.0, color: '#0000FF', isVisible: false },
+            { name: '[Fe II] 16113', wavelength: 16113.0, color: '#0000FF', isVisible: false },
+            { name: '[Fe II] 16305', wavelength: 16305.0, color: '#0000FF', isVisible: false },
+            { name: '[Fe II] 16460', wavelength: 16439.981, color: '#0000FF', isVisible: true },
+            { name: '[Fe II] 16811', wavelength: 16811.0, color: '#0000FF', isVisible: false },
+            { name: '[Fe II] 17360', wavelength: 17360.0, color: '#0000FF', isVisible: false },
+            { name: '[Fe II] 18100', wavelength: 18100.0, color: '#0000FF', isVisible: false },
+
+            // H2 S-branch Lines - Color: MediumPurple
+            { name: 'H2 1-0 S(0)', wavelength: 22235.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 1-0 S(1)', wavelength: 21218.0, color: '#9370DB', isVisible: true },
+            { name: 'H2 1-0 S(2)', wavelength: 20338.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 1-0 S(3)', wavelength: 19576.0, color: '#9370DB', isVisible: true },
+            { name: 'H2 1-0 S(4)', wavelength: 18920.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 1-0 S(5)', wavelength: 18358.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 1-0 S(6)', wavelength: 17880.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 1-0 S(7)', wavelength: 17480.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 1-0 S(8)', wavelength: 17147.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 1-0 S(9)', wavelength: 16877.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 1-0 S(10)', wavelength: 16665.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 1-0 S(11)', wavelength: 16504.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 2-1 S(1)', wavelength: 22477.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 2-1 S(2)', wavelength: 21542.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 2-1 S(3)', wavelength: 20735.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 2-1 S(4)', wavelength: 20041.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 2-1 S(5)', wavelength: 19449.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 3-2 S(3)', wavelength: 22014.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 3-2 S(6)', wavelength: 20130.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 2-0 S(1)', wavelength: 11622.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 2-0 S(2)', wavelength: 11382.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 2-0 S(3)', wavelength: 11175.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 2-0 S(4)', wavelength: 10998.0, color: '#9370DB', isVisible: false },
+            { name: 'H2 2-0 S(5)', wavelength: 10851.0, color: '#9370DB', isVisible: false },
+
+            // H2 Q-branch Lines - Color: MediumOrchid
+            { name: 'H2 1-0 Q(1)', wavelength: 24066.0, color: '#BA55D3', isVisible: false },
+            { name: 'H2 1-0 Q(2)', wavelength: 24134.0, color: '#BA55D3', isVisible: false },
+            { name: 'H2 1-0 Q(3)', wavelength: 24237.0, color: '#BA55D3', isVisible: false },
+            { name: 'H2 1-0 Q(4)', wavelength: 24375.0, color: '#BA55D3', isVisible: false },
+            { name: 'H2 1-0 Q(5)', wavelength: 24548.0, color: '#BA55D3', isVisible: false },
+            { name: 'H2 1-0 Q(6)', wavelength: 24756.0, color: '#BA55D3', isVisible: false },
+            { name: 'H2 1-0 Q(7)', wavelength: 25001.0, color: '#BA55D3', isVisible: false },
+            { name: 'H2 2-0 Q(1)', wavelength: 12383.0, color: '#BA55D3', isVisible: false },
+            { name: 'H2 2-0 Q(3)', wavelength: 12473.0, color: '#BA55D3', isVisible: false },
+            { name: 'H2 2-0 Q(5)', wavelength: 12636.0, color: '#BA55D3', isVisible: false },
+
+            // H2 O-branch Lines - Color: DarkViolet
+            { name: 'H2 1-0 O(2)', wavelength: 26269.0, color: '#9400D3', isVisible: false },
+            { name: 'H2 1-0 O(3)', wavelength: 28025.0, color: '#9400D3', isVisible: false },
+            { name: 'H2 1-0 O(4)', wavelength: 30039.0, color: '#9400D3', isVisible: false },
+            { name: 'H2 1-0 O(5)', wavelength: 32350.0, color: '#9400D3', isVisible: false },
+            { name: 'H2 1-0 O(6)', wavelength: 35007.0, color: '#9400D3', isVisible: false },
+            { name: 'H2 1-0 O(7)', wavelength: 38075.0, color: '#9400D3', isVisible: false },
+            { name: 'H2 2-1 O(3)', wavelength: 29741.0, color: '#9400D3', isVisible: false },
+            { name: 'H2 2-1 O(5)', wavelength: 34379.0, color: '#9400D3', isVisible: false },
+
+            // Other NIR Carbon Lines - Color: SlateBlue
+            { name: 'C II 17850', wavelength: 17850.0, color: '#6A5ACD', isVisible: false },
+            { name: 'C III 20850', wavelength: 20850.0, color: '#6A5ACD', isVisible: false },
+            { name: 'C III 21140', wavelength: 21140.0, color: '#6A5ACD', isVisible: false },
+            { name: 'C II 21880', wavelength: 21880.0, color: '#6A5ACD', isVisible: false },
+            { name: 'C III 23250', wavelength: 23250.0, color: '#6A5ACD', isVisible: false },
+
+            // PAH lines
+            { name: 'PAH 3.3µm', wavelength: 33000.0, color: '#8A2BE2', isVisible: false },
+            { name: 'PAH 6.2µm', wavelength: 62000.0, color: '#8A2BE2', isVisible: false },
+            { name: 'PAH 7.7µm', wavelength: 77000.0, color: '#8A2BE2', isVisible: false },
+            { name: 'PAH 8.6µm', wavelength: 86000.0, color: '#8A2BE2', isVisible: false },
+            { name: 'PAH 11.3µm', wavelength: 113000.0, color: '#8A2BE2', isVisible: false }
+        ];
+        let editableEmissionLines = [];
+        let emissionLinePresets = [];
+
+
+        let isMouseOverCanvas = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let redshiftInputDebounceTimer = null;
+
+        function initialize() {
+            loadPersistentData();
+            preloadLogo();
+
+            imageUpload.addEventListener('change', (e) => {
+                for (const file of e.target.files) {
+                    processImageFile(file);
+                }
+                imageUpload.value = '';
+            });
+            dropZone.addEventListener('click', () => imageUpload.click());
+            setupDragAndDrop();
+
+            spectrumCanvas.addEventListener('mousedown', handleCanvasMouseDown);
+            spectrumCanvas.addEventListener('click', handleCanvasClick);
+            spectrumCanvas.addEventListener('mousemove', handleCanvasMouseMove);
+            spectrumCanvas.addEventListener('mouseleave', handleCanvasMouseLeave);
+
+            document.addEventListener('mousemove', handleDocumentMouseMoveForDrag);
+            document.addEventListener('mouseup', handleDocumentMouseUpForDrag);
+
+            document.addEventListener('click', handleDocumentClick, true);
+            calibrateButton.addEventListener('click', performCalibration);
+            recalibrateButtonToggle.addEventListener('click', handleRecalibrateToggle);
+
+            redshiftInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    handleRedshiftInputChange({ target: redshiftInput });
+                }
+            });
+            redshiftInput.addEventListener('blur', () => {
+                clearTimeout(redshiftInputDebounceTimer);
+                handleRedshiftInputChange({ target: redshiftInput });
+            });
+
+
+            resetButton.addEventListener('click', () => {
+                if (confirm("Are you sure you want to reset the entire application? This will clear all images, calibration, and custom line presets.")) {
+                    resetApplication();
+                }
+            });
+            wl1Input.addEventListener('input', updateUIState);
+            wl2Input.addEventListener('input', updateUIState);
+            wavelengthUnitSelect.addEventListener('change', () => {
+                updateUIState();
+                if (isGloballyCalibrated && isMouseOverCanvas && activeImageIndex !== -1) {
+                    const event = new MouseEvent('mousemove', { clientX: lastMouseX, clientY: lastMouseY });
+                    handleCanvasMouseMove(event);
+                }
+            });
+            document.addEventListener('keydown', handleKeyDown);
+            zoomCanvas.addEventListener('click', handleZoomCanvasClick);
+            window.addEventListener('resize', handleWindowResize);
+            window.addEventListener('beforeunload', handleBeforeUnload);
+
+
+            toggleLinesEditorButton.addEventListener('click', toggleLineEditorPanel);
+            closeLineEditorButton.addEventListener('click', toggleLineEditorPanel);
+            modalAddOrUpdateButton.addEventListener('click', handleModalAddOrUpdateLine);
+            modalClearFormButton.addEventListener('click', clearModalForm);
+
+            presetSelect.addEventListener('change', handlePresetChange);
+            savePresetButton.addEventListener('click', handleSavePreset);
+            deletePresetButton.addEventListener('click', handleDeletePreset);
+
+
+            updateUIState();
+            renderGallery();
+            populatePresetDropdown();
+
+            handleWindowResize();
+
+            const storedSelectedEmissionLinePresetIndex = localStorage.getItem('selectedEmissionLinePresetIndex');
+            if (storedSelectedEmissionLinePresetIndex !== null) {
+                const index = parseInt(storedSelectedEmissionLinePresetIndex, 10);
+                if (index >= 0 && index < emissionLinePresets.length) { // Check if index is valid
+                    presetSelect.value = index.toString();
+                    handlePresetChange(); // This will load the lines
+                } else { // Invalid index, default to first preset
+                    presetSelect.value = "0";
+                    handlePresetChange();
+                }
+            } else if (emissionLinePresets.length > 0) { // No stored index, default to first
+                presetSelect.value = "0";
+                handlePresetChange();
+            }
+        }
+
+        function preloadLogo() {
+            logoImage = new Image();
+            logoImage.onload = () => {
+                if (activeImageIndex === -1) {
+                    drawLogo();
+                }
+            };
+            logoImage.onerror = () => {
+                console.error("Failed to load logo image.");
+                if (activeImageIndex === -1) {
+                    drawPlaceholderCanvas();
+                }
+            };
+            logoImage.src = LOGO_URL;
+        }
+
+        function drawLogo() {
+            if (logoImage && logoImage.complete && spectrumCanvas.width > 0 && spectrumCanvas.height > 0) {
+                ctx.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+                // ctx.imageSmoothingEnabled = false;
+                // ctx.webkitImageSmoothingEnabled = false;
+                // ctx.msImageSmoothingEnabled = false;
+
+                // const canvasAspect = spectrumCanvas.width / spectrumCanvas.height;
+                const logoAspect = logoImage.naturalWidth / logoImage.naturalHeight;
+                // let drawWidth, drawHeight, dx, dy;
+
+                // if (canvasAspect > logoAspect) {
+                //     drawHeight = spectrumCanvas.height * 0.8;
+                //     drawWidth = drawHeight * logoAspect;
+                // } else {
+                //     drawWidth = spectrumCanvas.width * 0.8;
+                //     drawHeight = drawWidth / logoAspect;
+                // }
+                // drawWidth = Math.min(drawWidth, spectrumCanvas.width * 0.9);
+                // drawHeight = Math.min(drawHeight, spectrumCanvas.height * 0.9);
+
+
+                // dx = (spectrumCanvas.width - drawWidth) / 2;
+                // dy = (spectrumCanvas.height - drawHeight) / 2;
+
+                // ctx.drawImage(logoImage, dx, dy, drawWidth, drawHeight);
+                spectrumCanvas.height = spectrumCanvas.width / logoAspect; // Maintain aspect ratio
+                ctx.drawImage(logoImage, 0, 0, spectrumCanvas.width, spectrumCanvas.width/logoAspect); // Draw the image with the calculated dimensions
+            } else if (spectrumCanvas.width > 0 && spectrumCanvas.height > 0) { // Ensure canvas has dimensions
+                drawPlaceholderCanvas();
+            }
+        }
+
+        function drawPlaceholderCanvas() {
+            if (spectrumCanvas.width > 0 && spectrumCanvas.height > 0) {
+                ctx.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+                ctx.fillStyle = '#E5E7EB';
+                ctx.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+                ctx.fillStyle = '#4B5563';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('MySpecZ - Your Quick Spec-z Tool', spectrumCanvas.width / 2, spectrumCanvas.height / 2);
+            }
+        }
+
+
+        function handleBeforeUnload(event) {
+            event.preventDefault();
+            event.returnValue = '';
+            return '';
+        }
+
+        function loadPersistentData() {
+            editableEmissionLines = DEFAULT_EMISSION_LINES_PRESET.map(line => ({ ...line }));
+            editableEmissionLines.forEach(line => {
+                if (typeof line.isVisible === 'undefined') {
+                    line.isVisible = true;
+                }
+            });
+            // Do not save here, save explicitly
+
+            const storedCalibration = localStorage.getItem('globalSpectrumCalibration');
+            if (storedCalibration) {
+                const calib = JSON.parse(storedCalibration);
+                slopeNatural = calib.slopeNatural;
+                interceptNatural = calib.interceptNatural;
+                isGloballyCalibrated = true;
+            } else {
+                isGloballyCalibrated = false;
+            }
+
+            const storedPresets = localStorage.getItem('emissionLinePresets_custom');
+            emissionLinePresets = [{ name: "Default", lines: DEFAULT_EMISSION_LINES_PRESET.map(l => ({ ...l })), isDefault: true }];
+            if (storedPresets) {
+                const customPresets = JSON.parse(storedPresets);
+                emissionLinePresets = emissionLinePresets.concat(customPresets);
+            }
+        }
+
+        function saveGlobalCalibration() {
+            if (slopeNatural !== null && interceptNatural !== null) {
+                localStorage.setItem('globalSpectrumCalibration', JSON.stringify({ slopeNatural, interceptNatural }));
+            } else {
+                localStorage.removeItem('globalSpectrumCalibration');
+            }
+        }
+
+
+        function handleWindowResize() {
+            if (activeImageIndex !== -1 && galleryImages[activeImageIndex]?.imageObject) {
+                const currentImage = galleryImages[activeImageIndex].imageObject;
+                const containerWidth = rightPanel.offsetWidth;
+                let newScaleFactor = containerWidth / currentImage.naturalWidth;
+
+                if (currentImage.naturalWidth <= containerWidth && newScaleFactor > 1) {
+                    newScaleFactor = 1;
+                }
+                if (newScaleFactor <= 0) newScaleFactor = 0.1;
+
+                currentDisplayScaleFactor = newScaleFactor;
+                spectrumCanvas.width = currentImage.naturalWidth * currentDisplayScaleFactor;
+                spectrumCanvas.height = currentImage.naturalHeight * currentDisplayScaleFactor;
+
+                drawSpectrumWithPointsAndLines();
+
+                if (isZoomActive && activeCalibrationPointIndex !== -1) {
+                    const activePoint = calibrationPoints[activeCalibrationPointIndex];
+                    const displayX = activePoint.x_natural * currentDisplayScaleFactor;
+                    const displayY = activePoint.y_natural * currentDisplayScaleFactor;
+                    showZoomView(displayX, displayY);
+                }
+            } else if (logoImage && logoImage.complete) {
+                const containerWidth = rightPanel.offsetWidth;
+                const desiredLogoCanvasHeight = 150;
+                spectrumCanvas.width = containerWidth > 0 ? containerWidth : 300;
+                spectrumCanvas.height = desiredLogoCanvasHeight;
+                drawLogo();
+            } else {
+                const canvasPlaceholderWidth = rightPanel?.offsetWidth || 300;
+                spectrumCanvas.width = canvasPlaceholderWidth;
+                spectrumCanvas.height = 150;
+                drawPlaceholderCanvas();
+            }
+        }
+
+        function setupDragAndDrop() {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+            });
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                for (const file of dt.files) {
+                    processImageFile(file);
+                }
+            }, false);
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function processImageFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e_reader) => {
+                    const newImageObject = new Image();
+                    newImageObject.onload = () => {
+                        const imageHash = md5(e_reader.target.result);
+                        let savedRedshift = localStorage.getItem('redshift_' + imageHash);
+                        savedRedshift = savedRedshift ? parseFloat(savedRedshift) : 0.0;
+
+                        const newImageEntry = {
+                            id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                            name: file.name,
+                            imageObject: newImageObject,
+                            imageDataUrl: e_reader.target.result,
+                            hash: imageHash,
+                            redshift: savedRedshift,
+                        };
+                        galleryImages.push(newImageEntry);
+                        setActiveImage(galleryImages.length - 1);
+                    };
+                    newImageObject.onerror = () => {
+                        statusMessage.textContent = `Error: Could not load image ${file.name}.`;
+                    }
+                    newImageObject.src = e_reader.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else if (file) {
+                statusMessage.textContent = `Error: ${file.name} is not a valid image file.`;
+            }
+        }
+
+        function setActiveImage(index) {
+            if (index < 0 || index >= galleryImages.length) return;
+
+            activeImageIndex = index;
+            const activeImageData = galleryImages[activeImageIndex];
+
+            calibrationPoints = [];
+            activeCalibrationPointIndex = -1;
+            hideZoomView();
+
+            syncRedshift(activeImageData.redshift);
+
+            handleWindowResize();
+            updateUIState();
+            renderGallery();
+        }
+
+        function renderGallery() {
+            galleryList.innerHTML = '';
+            if (galleryImages.length > 0) {
+                galleryContainer.classList.remove('hidden');
+            } else {
+                galleryContainer.classList.add('hidden');
+                return;
+            }
+
+            galleryImages.forEach((imgData, index) => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item text-sm truncate';
+                item.textContent = imgData.name;
+                if (index === activeImageIndex) {
+                    item.classList.add('active');
+                }
+                item.onclick = () => setActiveImage(index);
+                galleryList.appendChild(item);
+            });
+        }
+
+
+        function updateUIState() {
+            const hasActiveImage = activeImageIndex !== -1 && galleryImages[activeImageIndex];
+
+            imageUploadContainer.classList.toggle('hidden', false);
+            galleryContainer.classList.toggle('hidden', galleryImages.length === 0);
+            spectrumInfoContainer.classList.toggle('hidden', !hasActiveImage);
+
+            const prevIsGloballyCalibratedState = isGloballyCalibrated;
+
+            if (isGloballyCalibrated) {
+                calibrationControls.classList.add('hidden');
+                recalibrateButtonToggle.classList.remove('hidden');
+                redshiftInputContainerRight.classList.remove('hidden');
+                dropZoneText.textContent = "Drag & drop new image(s) here, or click to select. Current calibration will be applied.";
+            } else {
+                calibrationControls.classList.toggle('hidden', !hasActiveImage);
+                recalibrateButtonToggle.classList.add('hidden');
+                redshiftInputContainerRight.classList.add('hidden');
+                dropZoneText.textContent = "Drag & drop image(s) here, or click to select.";
+            }
+
+            const wl1Valid = !isNaN(parseFloat(wl1Input.value)) && wl1Input.value.trim() !== "";
+            const wl2Valid = !isNaN(parseFloat(wl2Input.value)) && wl2Input.value.trim() !== "";
+            if (calibrateButton) {
+                calibrateButton.disabled = !(calibrationPoints.length === 2 && wl1Valid && wl2Valid && hasActiveImage);
+            }
+
+            resetButton.disabled = galleryImages.length === 0;
+
+            if (isGloballyCalibrated !== prevIsGloballyCalibratedState && hasActiveImage) {
+                requestAnimationFrame(() => {
+                    handleWindowResize();
+                });
+            }
+
+
+            if (!hasActiveImage) {
+                statusMessage.textContent = 'Please upload a spectrum image to begin.';
+                mouseWavelengthDisplay.textContent = 'Cursor Wavelength: N/A';
+            } else if (!isGloballyCalibrated) {
+                statusMessage.className = 'mb-4 p-3 bg-yellow-100 text-yellow-700 rounded-lg text-center col-span-full';
+                if (calibrationPoints.length === 0) {
+                    statusMessage.textContent = 'Click on the spectrum to select the first calibration point.';
+                } else if (calibrationPoints.length === 1) {
+                    let msg = `1 point selected. Select the second calibration point.`;
+                    if (activeCalibrationPointIndex === 0) msg += ` Point 1 is active for fine-tuning/deletion.`;
+                    statusMessage.textContent = msg;
+                } else if (calibrationPoints.length === 2) {
+                    let msg = `2 points selected.`;
+                    if (activeCalibrationPointIndex !== -1) msg += ` Point ${activeCalibrationPointIndex + 1} is active for fine-tuning/deletion.`;
+                    if (!wl1Valid || !wl2Valid) {
+                        msg += ' Please enter valid wavelength values for both points.';
+                    } else {
+                        msg += ' Wavelengths entered. Click "Calibrate X-axis" or continue fine-tuning.';
+                    }
+                    statusMessage.textContent = msg;
+                }
+                mouseWavelengthDisplay.textContent = 'Cursor Wavelength: (Not Calibrated)';
+            } else {
+                statusMessage.textContent = 'Calibration complete. Adjust redshift.';
+                statusMessage.className = 'mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-center col-span-full';
+                setTimeout(() => {
+                    if (statusMessage.textContent === 'Calibration complete. Adjust redshift.') {
+                        statusMessage.style.display = 'none';
+                    }
+                }, 3000);
+            }
+        }
+
+        function drawImage() {
+            // ctx.imageSmoothingEnabled = false;
+            // ctx.webkitImageSmoothingEnabled = false;
+            // ctx.msImageSmoothingEnabled = false;
+
+            if (activeImageIndex !== -1 && galleryImages[activeImageIndex]?.imageObject && spectrumCanvas.width > 0 && spectrumCanvas.height > 0) {
+                const currentImage = galleryImages[activeImageIndex].imageObject;
+                ctx.clearRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+                ctx.drawImage(currentImage, 0, 0, spectrumCanvas.width, spectrumCanvas.height);
+            } else if (logoImage && logoImage.complete) {
+                drawLogo();
+            } else {
+                drawPlaceholderCanvas();
+            }
+        }
+
+        function handleDocumentClick(event) {
+            if (isZoomActive && !zoomCanvasContainer.contains(event.target) && event.target !== spectrumCanvas && event.target !== zoomCanvas) {
+                if (event.target === wl1Input || event.target === wl2Input || wavelengthUnitSelect.contains(event.target) || recalibrateButtonToggle.contains(event.target)) return;
+                hideZoomView();
+                activeCalibrationPointIndex = -1;
+                drawSpectrumWithPointsAndLines();
+                updateUIState();
+            }
+        }
+
+        function handleCanvasMouseDown(event) {
+            if (event.shiftKey && isGloballyCalibrated && activeImageIndex !== -1 && slopeNatural !== null) {
+                isDraggingRedshift = true;
+                const rect = spectrumCanvas.getBoundingClientRect();
+                const mouseX_display_start = event.clientX - rect.left;
+                const mouseX_natural_start = mouseX_display_start / currentDisplayScaleFactor;
+                const wavelengthAtInitialClick = slopeNatural * mouseX_natural_start + interceptNatural;
+                const currentImgRedshift = galleryImages[activeImageIndex].redshift;
+
+                dragReferenceRestWavelength = wavelengthAtInitialClick / (1 + currentImgRedshift);
+
+                spectrumCanvas.style.cursor = 'ew-resize';
+                event.preventDefault();
+            }
+        }
+
+        function handleDocumentMouseMoveForDrag(event) {
+            if (isDraggingRedshift && activeImageIndex !== -1 && slopeNatural !== null && dragReferenceRestWavelength !== null && dragReferenceRestWavelength > 0) {
+                const rect = spectrumCanvas.getBoundingClientRect();
+                const currentMouseX_display = event.clientX - rect.left;
+                const currentMouseX_natural = currentMouseX_display / currentDisplayScaleFactor;
+                const new_wavelength_at_cursor = slopeNatural * currentMouseX_natural + interceptNatural;
+
+                const newRedshift = (new_wavelength_at_cursor / dragReferenceRestWavelength) - 1;
+                syncRedshift(newRedshift);
+            }
+        }
+
+        function handleDocumentMouseUpForDrag(event) {
+            if (isDraggingRedshift) {
+                isDraggingRedshift = false;
+                dragReferenceRestWavelength = null;
+                spectrumCanvas.style.cursor = 'crosshair';
+            }
+        }
+
+
+        function handleCanvasClick(event) {
+            if (isDraggingRedshift) return;
+            if (activeImageIndex === -1 || isGloballyCalibrated) return;
+
+            const rect = spectrumCanvas.getBoundingClientRect();
+            const clickX_display = parseFloat((event.clientX - rect.left).toFixed(2));
+            const clickY_display = parseFloat((event.clientY - rect.top).toFixed(2));
+
+            const clickX_natural = clickX_display / currentDisplayScaleFactor;
+            const clickY_natural = clickY_display / currentDisplayScaleFactor;
+
+            if (calibrationPoints.length === 2) {
+                let pointSelected = false;
+                for (let i = 0; i < calibrationPoints.length; i++) {
+                    const p_display_x = calibrationPoints[i].x_natural * currentDisplayScaleFactor;
+                    const p_display_y = calibrationPoints[i].y_natural * currentDisplayScaleFactor;
+                    const distance = Math.sqrt(Math.pow(clickX_display - p_display_x, 2) + Math.pow(clickY_display - p_display_y, 2));
+
+                    if (distance < POINT_SELECTION_RADIUS) {
+                        activeCalibrationPointIndex = i;
+                        showZoomView(p_display_x, p_display_y);
+                        pointSelected = true;
+                        break;
+                    }
+                }
+                if (!pointSelected) {
+                    hideZoomView();
+                    activeCalibrationPointIndex = -1;
+                }
+                drawSpectrumWithPointsAndLines();
+                updateUIState();
+                return;
+            }
+
+            if (calibrationPoints.length < 2) {
+                calibrationPoints.push({
+                    x_natural: clickX_natural,
+                    y_natural: clickY_natural,
+                    x_display_initial: clickX_display,
+                    y_display_initial: clickY_display
+                });
+                activeCalibrationPointIndex = calibrationPoints.length - 1;
+                showZoomView(clickX_display, clickY_display);
+                drawSpectrumWithPointsAndLines();
+            }
+            updateUIState();
+        }
+
+        function handleKeyDown(event) {
+            if (activeCalibrationPointIndex === -1 || calibrationPoints.length === 0 || isGloballyCalibrated) {
+                if (event.key === 'Escape' && isZoomActive) {
+                    hideZoomView();
+                }
+                return;
+            }
+
+            const point = calibrationPoints[activeCalibrationPointIndex];
+            let pointMoved = false;
+
+            let currentDisplayX = point.x_natural * currentDisplayScaleFactor;
+            let currentDisplayY = point.y_natural * currentDisplayScaleFactor;
+
+            switch (event.key.toLowerCase()) {
+                case 'arrowup': currentDisplayY -= ARROW_KEY_ADJUST_STEP; pointMoved = true; break;
+                case 'arrowdown': currentDisplayY += ARROW_KEY_ADJUST_STEP; pointMoved = true; break;
+                case 'arrowleft': currentDisplayX -= ARROW_KEY_ADJUST_STEP; pointMoved = true; break;
+                case 'arrowright': currentDisplayX += ARROW_KEY_ADJUST_STEP; pointMoved = true; break;
+                case 'd':
+                    calibrationPoints.splice(activeCalibrationPointIndex, 1);
+                    hideZoomView();
+                    activeCalibrationPointIndex = -1;
+                    drawSpectrumWithPointsAndLines();
+                    updateUIState();
+                    return;
+                case 'escape':
+                    hideZoomView();
+                    activeCalibrationPointIndex = -1;
+                    drawSpectrumWithPointsAndLines();
+                    updateUIState();
+                    return;
+            }
+
+            if (pointMoved) {
+                event.preventDefault();
+                currentDisplayX = Math.max(0, Math.min(spectrumCanvas.width, currentDisplayX));
+                currentDisplayY = Math.max(0, Math.min(spectrumCanvas.height, currentDisplayY));
+
+                point.x_natural = parseFloat((currentDisplayX / currentDisplayScaleFactor).toFixed(4));
+                point.y_natural = parseFloat((currentDisplayY / currentDisplayScaleFactor).toFixed(4));
+                point.x_display_initial = parseFloat(currentDisplayX.toFixed(2));
+                point.y_display_initial = parseFloat(currentDisplayY.toFixed(2));
+
+                drawSpectrumWithPointsAndLines();
+                showZoomView(currentDisplayX, currentDisplayY);
+            }
+        }
+
+        function drawSpectrumWithPointsAndLines() {
+            if (activeImageIndex === -1 || !galleryImages[activeImageIndex]?.imageObject) {
+                drawImage();
+                return;
+            }
+            drawImage();
+
+            if (!isGloballyCalibrated) {
+                calibrationPoints.forEach((p_natural, index) => {
+                    const displayX = p_natural.x_natural * currentDisplayScaleFactor;
+                    const displayY = p_natural.y_natural * currentDisplayScaleFactor;
+
+                    const isActive = index === activeCalibrationPointIndex;
+                    ctx.beginPath();
+                    ctx.arc(displayX, displayY, isActive ? 7 : 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = isActive ? 'rgba(0, 150, 255, 0.85)' : 'rgba(255, 0, 0, 0.7)';
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.lineWidth = isActive ? 2 : 1.5;
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.font = 'bold 12px Arial';
+                    ctx.fillStyle = 'black';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    const labelX = displayX + (isActive ? 10 : 8);
+                    const labelY = displayY - (isActive ? 10 : 8);
+                    ctx.fillText((index + 1).toString(), labelX, labelY);
+                });
+            }
+
+            if (isGloballyCalibrated) {
+                drawEmissionLines();
+            }
+        }
+
+        function performCalibration() {
+            if (calibrationPoints.length !== 2 || activeImageIndex === -1) {
+                statusMessage.textContent = 'Error: Please select two calibration points on the active image.';
+                return;
+            }
+
+            let wl_val1 = parseFloat(wl1Input.value);
+            let wl_val2 = parseFloat(wl2Input.value);
+
+            if (isNaN(wl_val1) || isNaN(wl_val2)) {
+                statusMessage.textContent = 'Error: Wavelengths must be valid numbers.';
+                return;
+            }
+
+            const unit = wavelengthUnitSelect.value;
+            if (unit === 'um') {
+                wl_val1 *= 10000;
+                wl_val2 *= 10000;
+            }
+
+            const px1_natural = calibrationPoints[0].x_natural;
+            const px2_natural = calibrationPoints[1].x_natural;
+
+            if (px1_natural === px2_natural) {
+                statusMessage.textContent = 'Error: Calibration points cannot have the same X-coordinate.';
+                return;
+            }
+
+            slopeNatural = (wl_val1 - wl_val2) / (px1_natural - px2_natural);
+            interceptNatural = wl_val1 - slopeNatural * px1_natural;
+            saveGlobalCalibration();
+
+            isGloballyCalibrated = true;
+            hideZoomView();
+            activeCalibrationPointIndex = -1;
+            galleryImages[activeImageIndex].redshift = 0.0;
+            syncRedshift(0.0);
+
+            updateUIState();
+        }
+
+        function handleRecalibrateToggle() {
+            if (!confirm("Are you sure you want to re-calibrate? This will clear current calibration points and parameters.")) return;
+
+            isGloballyCalibrated = false;
+            slopeNatural = null;
+            interceptNatural = null;
+            saveGlobalCalibration();
+
+            calibrationPoints = [];
+            activeCalibrationPointIndex = -1;
+
+            topLineLabelContainer.innerHTML = '';
+            wl1Input.value = '';
+            wl2Input.value = '';
+
+            drawSpectrumWithPointsAndLines();
+            updateUIState();
+        }
+
+
+        function hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+
+        function chooseBackgroundColor(hexcolor) {
+            const rgbcolor = hexToRgb(hexcolor);
+            if (!rgbcolor) return "rgba(0,0,0,0.5)";
+            const textColorR = rgbcolor.r;
+            const textColorG = rgbcolor.g;
+            const textColorB = rgbcolor.b;
+            const luminance = 0.299 * textColorR + 0.587 * textColorG + 0.114 * textColorB;
+            const threshold = 160;
+            if (luminance > threshold) {
+                return "rgba(0, 0, 0, 0.5)";
+            } else {
+                return "rgba(255, 255, 255, 0)";
+            }
+        }
+
+        function drawEmissionLines() {
+            if (!isGloballyCalibrated || slopeNatural === null || interceptNatural === null || activeImageIndex === -1) return;
+
+            topLineLabelContainer.innerHTML = '';
+            const canvasHeight = spectrumCanvas.height;
+            const currentImgRedshift = galleryImages[activeImageIndex].redshift;
+
+            editableEmissionLines.forEach(line => {
+                if (!line.isVisible) return;
+
+                const observedWavelength = line.wavelength * (1 + currentImgRedshift);
+                const pixelX_natural = (observedWavelength - interceptNatural) / slopeNatural;
+                const pixelX_display = pixelX_natural * currentDisplayScaleFactor;
+
+
+                if (pixelX_display >= 0 && pixelX_display <= spectrumCanvas.width) {
+                    ctx.beginPath();
+                    ctx.moveTo(pixelX_display, 0);
+                    ctx.lineTo(pixelX_display, canvasHeight);
+                    ctx.strokeStyle = line.color;
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    const label = document.createElement('div');
+                    label.className = 'line-label';
+                    label.textContent = line.name;
+                    label.style.color = line.color;
+                    label.style.backgroundColor = chooseBackgroundColor(line.color);
+
+                    label.style.visibility = 'hidden';
+                    topLineLabelContainer.appendChild(label);
+
+                    const labelVisualWidth = label.offsetWidth;
+                    const labelVisualHeight = label.offsetHeight;
+
+                    label.style.left = `${pixelX_display - labelVisualWidth / 2}px`;
+                    label.style.top = `${topLineLabelContainer.offsetHeight - labelVisualHeight - 2}px`;
+
+                    label.style.visibility = 'visible';
+                }
+            });
+        }
+
+        function syncRedshift(value) {
+            if (activeImageIndex === -1) return;
+
+            let newRedshift = parseFloat(value);
+            if (isNaN(newRedshift)) newRedshift = galleryImages[activeImageIndex].redshift;
+
+            newRedshift = Math.max(-0.05, Math.min(30, newRedshift));
+            newRedshift = parseFloat(newRedshift.toFixed(4));
+
+            galleryImages[activeImageIndex].redshift = newRedshift;
+            redshiftInput.value = newRedshift.toFixed(4);
+
+            const activeImgData = galleryImages[activeImageIndex];
+            if (activeImgData && activeImgData.hash) {
+                localStorage.setItem('redshift_' + activeImgData.hash, newRedshift.toString());
+            }
+
+            if (isGloballyCalibrated) {
+                drawSpectrumWithPointsAndLines();
+            }
+        }
+
+        function handleRedshiftInputChange(event) {
+            if (activeImageIndex !== -1) {
+                syncRedshift(event.target.value);
+            }
+        }
+
+        function handleCanvasMouseMove(event) {
+            lastMouseX = event.clientX;
+            lastMouseY = event.clientY;
+            isMouseOverCanvas = true;
+
+            if (!isGloballyCalibrated || activeImageIndex === -1 || slopeNatural === null || interceptNatural === null) {
+                return;
+            }
+            const rect = spectrumCanvas.getBoundingClientRect();
+            const mouseX_display = event.clientX - rect.left;
+
+            const mouseX_natural = mouseX_display / currentDisplayScaleFactor;
+
+            let wavelength = slopeNatural * mouseX_natural + interceptNatural;
+            const unit = wavelengthUnitSelect.value;
+            let unitSymbol = "Å";
+
+            if (unit === 'um') {
+                wavelength /= 10000;
+                unitSymbol = "µm";
+            }
+            mouseWavelengthDisplay.textContent = `Cursor Wavelength: ${wavelength.toFixed(2)} ${unitSymbol}`;
+        }
+
+        function handleCanvasMouseLeave() {
+            isMouseOverCanvas = false;
+            if (isGloballyCalibrated) {
+                mouseWavelengthDisplay.textContent = 'Cursor Wavelength: N/A';
+            }
+        }
+
+
+        function resetApplicationState(fullResetApp = true) {
+            if (fullResetApp) {
+                galleryImages = [];
+                activeImageIndex = -1;
+                isGloballyCalibrated = false;
+                slopeNatural = null;
+                interceptNatural = null;
+                localStorage.removeItem('globalSpectrumCalibration');
+                localStorage.removeItem('emissionLinePresets_custom');
+                loadPersistentData();
+                populatePresetDropdown();
+            }
+
+            calibrationPoints = [];
+            activeCalibrationPointIndex = -1;
+            hideZoomView();
+
+            const currentImgRedshift = (activeImageIndex !== -1 && galleryImages[activeImageIndex] && !fullResetApp)
+                ? galleryImages[activeImageIndex].redshift
+                : 0.0;
+            syncRedshift(currentImgRedshift);
+
+            wl1Input.value = '';
+            wl2Input.value = '';
+            wavelengthUnitSelect.value = 'A';
+            topLineLabelContainer.innerHTML = '';
+            currentDisplayScaleFactor = 1;
+
+            if (activeImageIndex === -1 || fullResetApp) {
+                handleWindowResize();
+            } else {
+                handleWindowResize();
+            }
+        }
+
+        function resetApplication() {
+            resetApplicationState(true);
+            renderGallery();
+            updateUIState();
+        }
+
+        function showZoomView(canvasX_display, canvasY_display) {
+            if (activeImageIndex === -1 || !galleryImages[activeImageIndex]?.imageObject) return;
+            const currentImage = galleryImages[activeImageIndex].imageObject;
+            isZoomActive = true;
+            zoomCanvasContainer.classList.remove('hidden');
+
+            const originalImageX = canvasX_display / currentDisplayScaleFactor;
+            const originalImageY = canvasY_display / currentDisplayScaleFactor;
+
+            const srcX = originalImageX - ZOOM_SOURCE_REGION_SIZE / 2;
+            const srcY = originalImageY - ZOOM_SOURCE_REGION_SIZE / 2;
+            const srcWidth = ZOOM_SOURCE_REGION_SIZE;
+            const srcHeight = ZOOM_SOURCE_REGION_SIZE;
+
+            ctxZoom.imageSmoothingEnabled = false;
+            ctxZoom.clearRect(0, 0, ZOOM_CANVAS_SIZE, ZOOM_CANVAS_SIZE);
+            ctxZoom.drawImage(currentImage,
+                srcX, srcY, srcWidth, srcHeight,
+                0, 0, ZOOM_CANVAS_SIZE, ZOOM_CANVAS_SIZE);
+
+            ctxZoom.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+            ctxZoom.lineWidth = 1;
+            ctxZoom.beginPath();
+            ctxZoom.moveTo(ZOOM_CANVAS_SIZE / 2, 0);
+            ctxZoom.lineTo(ZOOM_CANVAS_SIZE / 2, ZOOM_CANVAS_SIZE);
+            ctxZoom.moveTo(0, ZOOM_CANVAS_SIZE / 2);
+            ctxZoom.lineTo(ZOOM_CANVAS_SIZE, ZOOM_CANVAS_SIZE / 2);
+            ctxZoom.stroke();
+        }
+
+        function hideZoomView() {
+            isZoomActive = false;
+            zoomCanvasContainer.classList.add('hidden');
+        }
+
+        function handleZoomCanvasClick(event) {
+            if (!isZoomActive || activeCalibrationPointIndex === -1 || activeImageIndex === -1) return;
+
+            const rect = zoomCanvas.getBoundingClientRect();
+            const zoomClickX = event.clientX - rect.left;
+            const zoomClickY = event.clientY - rect.top;
+
+            const activeCalPoint = calibrationPoints[activeCalibrationPointIndex];
+            const currentOriginalImageCenterX = activeCalPoint.x_natural;
+            const currentOriginalImageCenterY = activeCalPoint.y_natural;
+
+            const offsetXInZoom = zoomClickX - ZOOM_CANVAS_SIZE / 2;
+            const offsetYInZoom = zoomClickY - ZOOM_CANVAS_SIZE / 2;
+
+            const offsetXInOriginal = offsetXInZoom / ZOOM_LEVEL;
+            const offsetYInOriginal = offsetYInZoom / ZOOM_LEVEL;
+
+            const newOriginalImageX = currentOriginalImageCenterX + offsetXInOriginal;
+            const newOriginalImageY = currentOriginalImageCenterY + offsetYInOriginal;
+
+            activeCalPoint.x_natural = parseFloat(newOriginalImageX.toFixed(4));
+            activeCalPoint.y_natural = parseFloat(newOriginalImageY.toFixed(4));
+
+            let newMainCanvasX = newOriginalImageX * currentDisplayScaleFactor;
+            let newMainCanvasY = newOriginalImageY * currentDisplayScaleFactor;
+            newMainCanvasX = parseFloat(Math.max(0, Math.min(spectrumCanvas.width, newMainCanvasX)).toFixed(2));
+            newMainCanvasY = parseFloat(Math.max(0, Math.min(spectrumCanvas.height, newMainCanvasY)).toFixed(2));
+
+            activeCalPoint.x_display_initial = newMainCanvasX;
+            activeCalPoint.y_display_initial = newMainCanvasY;
+
+            drawSpectrumWithPointsAndLines();
+            showZoomView(newMainCanvasX, newMainCanvasY);
+            updateUIState();
+        }
+
+        function loadEmissionLines() {
+            const storedLines = localStorage.getItem('customEmissionLines');
+            if (storedLines) {
+                editableEmissionLines = JSON.parse(storedLines);
+            } else {
+                editableEmissionLines = DEFAULT_EMISSION_LINES_PRESET.map(line => ({ ...line }));
+            }
+            editableEmissionLines.forEach(line => {
+                if (typeof line.isVisible === 'undefined') {
+                    line.isVisible = true;
+                }
+            });
+        }
+
+        function saveEmissionLines() { // Saves the current editableEmissionLines to localStorage
+            // localStorage.setItem('customEmissionLines', JSON.stringify(editableEmissionLines));
+            // Also update the currently selected custom preset if it's not "Default"
+            const selectedPresetIndex = parseInt(presetSelect.value);
+            if (selectedPresetIndex >= 0 && selectedPresetIndex < emissionLinePresets.length && !emissionLinePresets[selectedPresetIndex].isDefault) {
+                emissionLinePresets[selectedPresetIndex].lines = editableEmissionLines.map(l => ({ ...l }));
+                const presetsToStore = emissionLinePresets.filter(p => !p.isDefault);
+                localStorage.setItem('emissionLinePresets_custom', JSON.stringify(presetsToStore));
+            }
+        }
+
+        function saveSelectedEmissionLinePresetIndex() {
+            localStorage.setItem('selectedEmissionLinePresetIndex', presetSelect.value);
+        }
+
+
+        function toggleLineEditorPanel() {
+            const isHidden = emissionLineEditorPanel.classList.toggle('hidden');
+            if (!isHidden) {
+                populateModalLineList();
+                clearModalForm();
+            } else {
+                saveEmissionLines();
+                drawSpectrumWithPointsAndLines();
+            }
+        }
+
+        function clearModalForm() {
+            modalLineName.value = '';
+            modalLineWavelength.value = '';
+            modalLineColor.value = '#FF0000';
+            editingLineIndex = -1;
+            modalAddOrUpdateButton.textContent = 'Add New Line';
+            modalAddOrUpdateButton.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+            modalAddOrUpdateButton.classList.add('bg-sky-500', 'hover:bg-sky-600');
+        }
+
+        function populateModalLineList() {
+            emissionLinesListDisplay.innerHTML = '';
+            editableEmissionLines.forEach((line, index) => {
+                const listItem = document.createElement('div');
+                listItem.className = 'flex items-center justify-between p-2 border-b last:border-b-0';
+
+                const lineInfo = document.createElement('div');
+                lineInfo.className = 'flex items-center';
+
+                const visibleCheckbox = document.createElement('input');
+                visibleCheckbox.type = 'checkbox';
+                visibleCheckbox.checked = line.isVisible;
+                visibleCheckbox.className = 'mr-3 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded';
+                visibleCheckbox.onchange = () => {
+                    editableEmissionLines[index].isVisible = visibleCheckbox.checked;
+                    // Real-time update:
+                    drawSpectrumWithPointsAndLines(); // Update main display
+                    // If current preset is custom, save this change to it
+                    const selectedPresetIndex = parseInt(presetSelect.value);
+                    if (selectedPresetIndex >= 0 && selectedPresetIndex < emissionLinePresets.length && !emissionLinePresets[selectedPresetIndex].isDefault) {
+                        emissionLinePresets[selectedPresetIndex].lines = editableEmissionLines.map(l => ({ ...l })); // Update the preset in memory
+                        const presetsToStore = emissionLinePresets.filter(p => !p.isDefault);
+                        localStorage.setItem('emissionLinePresets_custom', JSON.stringify(presetsToStore));
+                    }
+                    localStorage.setItem('customEmissionLines', JSON.stringify(editableEmissionLines)); // Save current working set
+                };
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = `${line.name} (${line.wavelength} Å)`;
+                nameSpan.style.color = line.color;
+                nameSpan.className = 'font-medium';
+
+                lineInfo.appendChild(visibleCheckbox);
+                lineInfo.appendChild(nameSpan);
+
+                const actionsDiv = document.createElement('div');
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.className = 'text-xs bg-yellow-400 hover:bg-yellow-500 text-black py-1 px-2 rounded-md mr-2';
+                editButton.onclick = () => {
+                    editingLineIndex = index;
+                    modalLineName.value = line.name;
+                    modalLineWavelength.value = line.wavelength;
+                    modalLineColor.value = line.color;
+                    modalAddOrUpdateButton.textContent = 'Update Line';
+                    modalAddOrUpdateButton.classList.remove('bg-sky-500', 'hover:bg-sky-600');
+                    modalAddOrUpdateButton.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+                };
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.className = 'text-xs bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded-md';
+                deleteButton.onclick = () => {
+                    if (confirm(`Are you sure you want to delete the line "${line.name}"?`)) {
+                        editableEmissionLines.splice(index, 1);
+                        saveEmissionLines(); // This saves the current working set AND updates the custom preset if active
+                        populateModalLineList();
+                        drawSpectrumWithPointsAndLines();
+                    }
+                };
+
+                actionsDiv.appendChild(editButton);
+                actionsDiv.appendChild(deleteButton);
+                listItem.appendChild(lineInfo);
+                listItem.appendChild(actionsDiv);
+                emissionLinesListDisplay.appendChild(listItem);
+            });
+        }
+
+        function handleModalAddOrUpdateLine() {
+            const name = modalLineName.value.trim();
+            const wavelength = parseFloat(modalLineWavelength.value);
+            const color = modalLineColor.value;
+
+            if (!name || isNaN(wavelength) || wavelength <= 0) {
+                alert('Please enter a valid line name and a positive wavelength.');
+                return;
+            }
+
+            const newLineData = { name, wavelength, color, isVisible: true };
+
+            if (editingLineIndex > -1) {
+                editableEmissionLines[editingLineIndex] = newLineData;
+            } else {
+                editableEmissionLines.push(newLineData);
+            }
+            saveEmissionLines(); // This saves the current working set AND updates the custom preset if active
+            populateModalLineList();
+            clearModalForm();
+            drawSpectrumWithPointsAndLines();
+        }
+
+        function populatePresetDropdown() {
+            presetSelect.innerHTML = '';
+            emissionLinePresets.forEach((preset, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = preset.name;
+                presetSelect.appendChild(option);
+            });
+        }
+
+        function handlePresetChange() {
+            const selectedIndex = parseInt(presetSelect.value);
+            if (selectedIndex >= 0 && selectedIndex < emissionLinePresets.length) {
+                editableEmissionLines = emissionLinePresets[selectedIndex].lines.map(l => ({ ...l }));
+                saveEmissionLines(); // Save the newly loaded lines as the current working set
+                saveSelectedEmissionLinePresetIndex();
+                populateModalLineList();
+                drawSpectrumWithPointsAndLines();
+            }
+        }
+
+        function handleSavePreset() {
+            const presetName = savePresetNameInput.value.trim();
+            if (!presetName) {
+                alert("Please enter a name for the preset.");
+                return;
+            }
+
+            const customPresets = emissionLinePresets.filter(p => !p.isDefault);
+            if (customPresets.find(p => p.name === presetName)) {
+                if (!confirm(`A custom preset named "${presetName}" already exists. Overwrite it?`)) {
+                    return;
+                }
+                emissionLinePresets = emissionLinePresets.filter(p => p.isDefault || p.name !== presetName);
+            }
+
+            const newPreset = { name: presetName, lines: editableEmissionLines.map(l => ({ ...l })), isDefault: false };
+            emissionLinePresets.push(newPreset);
+
+            const presetsToStore = emissionLinePresets.filter(p => !p.isDefault);
+            localStorage.setItem('emissionLinePresets_custom', JSON.stringify(presetsToStore));
+
+            populatePresetDropdown();
+            const newPresetIndex = emissionLinePresets.findIndex(p => p.name === presetName && !p.isDefault);
+            if (newPresetIndex !== -1) {
+                presetSelect.value = newPresetIndex;
+                saveSelectedEmissionLinePresetIndex();
+            }
+
+            savePresetNameInput.value = '';
+            alert(`Preset "${presetName}" saved.`);
+        }
+
+        function handleDeletePreset() {
+            const selectedIndex = parseInt(presetSelect.value);
+            if (selectedIndex >= 0 && selectedIndex < emissionLinePresets.length) {
+                const presetToDelete = emissionLinePresets[selectedIndex];
+                if (presetToDelete.isDefault) {
+                    alert("Cannot delete the default preset.");
+                    return;
+                }
+                if (confirm(`Are you sure you want to delete the preset "${presetToDelete.name}"?`)) {
+                    emissionLinePresets.splice(selectedIndex, 1);
+                    const presetsToStore = emissionLinePresets.filter(p => !p.isDefault);
+                    localStorage.setItem('emissionLinePresets_custom', JSON.stringify(presetsToStore));
+
+                    populatePresetDropdown();
+                    if (emissionLinePresets.length > 0) {
+                        presetSelect.value = "0";
+                        handlePresetChange(); // This will also call saveSelectedEmissionLinePresetIndex
+                    } else {
+                        editableEmissionLines = DEFAULT_EMISSION_LINES_PRESET.map(line => ({ ...line }));
+                        saveEmissionLines();
+                        populateModalLineList();
+                    }
+                }
+            }
+        }
+        initialize();
+    </script>
+</body>
+
+</html>

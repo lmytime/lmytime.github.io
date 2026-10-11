@@ -9,8 +9,8 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fff'/%3E%3Cstop offset='.28' stop-color='%23d6e6ff'/%3E%3Cstop offset='.62' stop-color='%235995ef' stop-opacity='.5'/%3E%3Cstop offset='1' stop-color='%235995ef' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='31' fill='url(%23g)'/%3E%3Cpath d='M32 3v58M7 17.5l50 29M7 46.5l50-29' stroke='%23eef4ff' stroke-width='1.8' stroke-linecap='round' opacity='.75'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link id="fonts" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap"></noscript>
+<link id="fonts" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400&amp;family=Sora:wght@200..700&amp;display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400&amp;family=Sora:wght@200..700&amp;display=swap"></noscript>
 <script>
   /* Hide text until the intro reveals it; if the script below never gets that far, show it anyway. */
   (function () {
@@ -38,9 +38,8 @@
     --dim: #7d88a8;
     --accent: #5995ef;
     --accent-soft: #9ec5ff;
-    --serif: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-    --sans: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --font: "Sora", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; /* a tailed l: the address must not read as 1mytime */
     --out: cubic-bezier(.16, 1, .3, 1);
     --fx: 50vw;
     --fy: 50vh;
@@ -57,7 +56,7 @@
     overflow-x: hidden;
     background: var(--bg);
     color: var(--ink);
-    font-family: var(--sans);
+    font-family: var(--font);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
@@ -245,8 +244,9 @@
   }
 
   .eyebrow {
-    margin: 0 0 .1em;
-    font: italic 400 clamp(1.2rem, .95rem + 1.1vw, 1.9rem)/1.3 var(--serif);
+    margin: 0 0 .3em;
+    font: 300 clamp(1rem, .86rem + .7vw, 1.45rem)/1.4 var(--font);
+    letter-spacing: .02em;
     color: var(--muted);
     transform: translateZ(30px);
     transform-style: preserve-3d;
@@ -258,11 +258,11 @@
     width: fit-content;
     max-width: 100%;
     margin: 0 auto;
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: clamp(3.4rem, min(16.5vw, 24vh), 10.5rem);
-    line-height: 1;
-    letter-spacing: -.012em;
+    font-family: var(--font);
+    font-weight: 300;
+    font-size: clamp(3rem, min(15vw, 22vh), 9.5rem);
+    line-height: 1.12; /* tall enough to hold the descenders of g and y */
+    letter-spacing: -.02em;
     color: var(--ink);
     transform: translateZ(70px);
   }
@@ -371,7 +371,7 @@
     position: relative;
     width: min(34rem, 74vw);
     height: 4px;
-    margin: clamp(1.1rem, 2.8vh, 1.9rem) auto clamp(1rem, 2.4vh, 1.6rem);
+    margin: clamp(1.15rem, 3vh, 1.9rem) auto clamp(1.2rem, 3vh, 1.9rem);
     border-radius: 4px;
     background:
       linear-gradient(90deg, transparent 14%, rgba(3, 4, 11, .8) 14% calc(14% + 1px), transparent calc(14% + 1px) 22%, rgba(3, 4, 11, .55) 22% calc(22% + 1px), transparent calc(22% + 1px) 36.5%, rgba(3, 4, 11, .9) 36.5% calc(36.5% + 2px), transparent calc(36.5% + 2px) 51%, rgba(3, 4, 11, .5) 51% calc(51% + 1px), transparent calc(51% + 1px) 61.5%, rgba(3, 4, 11, .85) 61.5% calc(61.5% + 2px), transparent calc(61.5% + 2px) 79%, rgba(3, 4, 11, .95) 79% calc(79% + 2px), transparent calc(79% + 2px)) 0 0 / 100% 100% no-repeat,
@@ -408,7 +408,7 @@
   .more {
     margin: 0;
     font-size: clamp(1rem, .92rem + .35vw, 1.2rem);
-    line-height: 2.7;
+    line-height: 1.6;
     color: var(--muted);
     transform: translateZ(45px);
     transform-style: preserve-3d;
@@ -426,8 +426,8 @@
     overflow: hidden;
     isolation: isolate;
     color: #fff;
-    font: 600 .82em/2.9 var(--sans);
-    letter-spacing: .24em;
+    font: 600 .76em/2.9 var(--font);
+    letter-spacing: .26em;
     text-decoration: none;
     background:
       linear-gradient(rgba(8, 12, 30, .86), rgba(8, 12, 30, .86)) padding-box,
@@ -466,11 +466,11 @@
   .cta:hover, .cta:focus-visible {
     box-shadow: 0 0 0 1px rgba(158, 197, 255, .25), 0 0 34px -2px rgba(89, 149, 239, .9), 0 0 90px -10px rgba(167, 139, 250, .65), inset 0 0 22px rgba(89, 149, 239, .3);
   }
-  .cta:hover { scale: 1.045; }
+  .cta:hover { scale: 1.035; }
   .cta:hover::before { opacity: 1; }
   .cta:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 4px; }
   /* inline-block, not flex: flex items would make screen readers spell the word out letter by letter */
-  .cta-label { position: relative; z-index: 1; display: inline-block; margin-right: -.24em; white-space: nowrap; }
+  .cta-label { position: relative; z-index: 1; display: inline-block; margin-right: -.26em; white-space: nowrap; }
   .cta-label .l { display: inline-block; }
   .cta:hover .l, .cta:focus-visible .l { animation: hop .7s var(--out) both; animation-delay: calc(var(--i) * 35ms); }
   @keyframes hop {
@@ -479,13 +479,15 @@
   }
 
   .mail {
-    margin: .35em 0 0;
+    margin: 1.2em 0 0;
+    font-weight: 300;
     font-size: clamp(.84rem, .8rem + .2vw, 1rem);
     letter-spacing: .06em;
     color: var(--dim);
     transform: translateZ(20px);
   }
-  .addr { font-family: var(--mono); font-size: .97em; letter-spacing: .02em; color: #c9d4f2; white-space: nowrap; }
+  .addr { font: 400 1.02em var(--mono); letter-spacing: 0; color: #c9d4f2; white-space: nowrap; }
+  .addr .lock { display: inline-block; text-align: center; }
   .addr .at { color: var(--accent-soft); }
   .addr .scr { color: var(--accent); }
 
@@ -698,6 +700,22 @@
   const warp = { active: false, t: 0, timer: 0 };
   let lensR = 50, ctaHover = false, T = 0, gt = 0;
 
+  // Centre the star on the ink of the full stop it replaces, whatever font is in use.
+  const metricCtx = document.createElement('canvas').getContext('2d');
+  function placeStar() {
+    const star = nameEl.querySelector('.star');
+    if (!star || !metricCtx) return;
+    const cs = getComputedStyle(nameEl);
+    metricCtx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const m = metricCtx.measureText('.');
+    if (!m.width) return;
+    const spacing = parseFloat(cs.letterSpacing) || 0;
+    const cx = (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2 - m.width - spacing;
+    const cy = (m.actualBoundingBoxDescent - m.actualBoundingBoxAscent) / 2;
+    star.style.setProperty('--cx', cx.toFixed(2) + 'px');
+    star.style.setProperty('--cy', cy.toFixed(2) + 'px');
+  }
+
   function measure() {
     W = window.innerWidth;
     H = window.innerHeight;
@@ -712,6 +730,7 @@
       L.cx = b.left + b.width / 2;
       L.cy = b.top + b.height / 2;
     }
+    placeStar();
     const c = cta.getBoundingClientRect();
     ctaBox.cx = c.left + c.width / 2; ctaBox.cy = c.top + c.height / 2; ctaBox.w = c.width; ctaBox.h = c.height;
     G.cx = W / 2;
@@ -1556,6 +1575,8 @@ void main() {
   function decrypt(dur, stagger) {
     if (reduce || scrambling) return;
     scrambling = true;
+    // hold every character at its real width so the line does not jitter while it scrambles
+    const widths = addrChars.map((s) => s.getBoundingClientRect().width);
     const t0 = performance.now();
     const tick = (now) => {
       const t = now - t0;
@@ -1565,11 +1586,15 @@ void main() {
         if (c === ' ') return;
         if (t < dur * 0.35 + i * stagger) {
           pending = true;
-          if (!s.classList.contains('scr') || Math.random() < 0.55) s.textContent = pick(GLYPHS);
-          s.classList.add('scr');
+          if (!s.classList.contains('scr')) {
+            s.style.width = widths[i].toFixed(2) + 'px';
+            s.classList.add('scr', 'lock');
+            s.textContent = pick(GLYPHS);
+          } else if (Math.random() < 0.55) s.textContent = pick(GLYPHS);
         } else if (s.classList.contains('scr')) {
           s.textContent = c;
-          s.classList.remove('scr');
+          s.classList.remove('scr', 'lock');
+          s.style.width = '';
         }
       });
       if (pending) requestAnimationFrame(tick);
@@ -1663,10 +1688,9 @@ void main() {
     if (!document.fonts || !document.fonts.load || !link) return done();
     const go = () => {
       Promise.all([
-        document.fonts.load('400 1em "Instrument Serif"'),
-        document.fonts.load('italic 400 1em "Instrument Serif"'),
-        document.fonts.load('500 1em "Space Grotesk"'),
-        document.fonts.load('400 1em "JetBrains Mono"'),
+        document.fonts.load('300 1em "Sora"'),
+        document.fonts.load('600 1em "Sora"'),
+        document.fonts.load('400 1em "DM Mono"'),
       ]).then(() => document.fonts.ready).then(done, done);
     };
     if (link.sheet) go();
@@ -1753,7 +1777,7 @@ void main() {
       if (q < 1) {
         const f = Math.sqrt(1 - q);
         tx = clamp(dx * 0.3 * f, -16, 16);
-        ty = clamp(dy * 0.42 * f, -12, 12);
+        ty = clamp(dy * 0.25 * f, -5, 5);
       }
     }
     S.cmx = lerp(S.cmx, tx, damp(9, dt));
